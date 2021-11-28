@@ -1,11 +1,14 @@
-import { useState, useEffect } from "react";
-import { logout } from "../utils/auth";
-import styles from "../styles/Home.module.css";
-import { fetchData } from "../utils/fetchData";
+import { useState } from "react";
+import { useRouter } from "next/router";
+import Stations from "../components/Stations";
 import { query as stationsQuery } from "../utils/queries";
-import Router from "next/router";
+import { logout } from "../utils/auth";
+import { fetchData } from "../utils/fetchData";
+import { isValidCoordinates } from "../utils/helpers";
+import styles from "../styles/Home.module.css";
 
-export default function Transport({ stations, email }) {
+export default function Transport({ stations, email, loading }) {
+  const router = useRouter();
   const [coordinates, setCoordinates] = useState({
     lng: "",
     lat: "",
@@ -14,8 +17,8 @@ export default function Transport({ stations, email }) {
   const handleInput = (e) => {
     const value = e.target.value;
     const fieldName = e.target.name;
-    // add more strict check of input value
-    if (!isNaN(value)) {
+    // add more strict check of input value for coordinates
+    if (isValidCoordinates(value)) {
       setCoordinates({
         ...coordinates,
         [fieldName]: e.target.value,
@@ -25,11 +28,10 @@ export default function Transport({ stations, email }) {
 
   const handleSearchPress = () => {
     if (lng && lat) {
-      Router.push({
-        pathname: '/transport',
-        query: { lng, lat }
-      })
-      setCoordinates({ lng: "", lat: "" });
+      router.push({
+        pathname: "/transport",
+        query: { lng, lat },
+      });
     }
   };
 
@@ -50,22 +52,11 @@ export default function Transport({ stations, email }) {
             Долгота:
             <input name="lng" value={lng} onChange={handleInput} />
           </label>
-          <button onClick={handleSearchPress}>
+          <button onClick={handleSearchPress} disabled={loading}>
             Поиск
           </button>
         </div>
-        {stations && stations.length > 0 && (
-          <div className={styles.stations}>
-            <div>Ближайшие станции:</div>
-            {stations.map(({ node }, index) => (
-              <div className={styles.station} key={node.id}>
-                <span className={styles.name}>{`${index + 1}. ${
-                  node.name
-                }`}</span>
-              </div>
-            ))}
-          </div>
-        )}
+        <Stations stations={stations} />
       </main>
     </div>
   );
@@ -90,20 +81,20 @@ export async function getServerSideProps(ctx) {
   let stations = [];
   // check if query params exists refetch stations
   const { lat, lng } = ctx.query;
-  if (lat && !isNaN(lat) && lng && !isNaN(lng)) {
+  if (lat && isValidCoordinates(lat) && lng && isValidCoordinates(lng)) {
     const response = await stationsQuery("GET_STATIONS", {
       lat: parseFloat(lat),
       lng: parseFloat(lng),
     });
     if (response?.stations?.edges) {
-      stations = response?.stations?.edges
+      stations = response?.stations?.edges;
     }
   }
 
   return {
     props: {
       email,
-      stations
+      stations,
     },
   };
 }

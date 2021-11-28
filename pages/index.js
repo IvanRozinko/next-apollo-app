@@ -4,7 +4,7 @@ import styles from "../styles/Home.module.css";
 import { login } from "../utils/auth";
 import { fetchData } from "../utils/fetchData";
 
-export default function Main() {
+export default function Main({ loading }) {
   const [credentials, setCredantials] = useState({
     email: "",
     password: "",
@@ -53,9 +53,16 @@ export default function Main() {
           </label>
           <label>
             Пароль:
-            <input name="password" value={password} onChange={handleInput} />
+            <input
+              name="password"
+              value={password}
+              onChange={handleInput}
+              type="password"
+            />
           </label>
-          <button onClick={handleLoginClick}>Вход</button>
+          <button onClick={handleLoginClick} disabled={loading}>
+            Вход
+          </button>
         </div>
       </main>
     </div>
